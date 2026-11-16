@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8fc">
+  <title>Relational — DB practice, in order</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172d48;
+      --muted: #6d819b;
+      --line: #e2eaf3;
+      --paper: #fff;
+      --wash: #f5f8fc;
+      --blue: #2867cc;
+      --blue-deep: #174b9b;
+      --blue-soft: #eaf2ff;
+      --mint: #e9f8f2;
+      --mint-ink: #18845f;
+      --amber: #fff5df;
+      --shadow: 0 16px 42px rgba(37, 74, 120, .08);
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0;
+      background: var(--wash);
+      color: var(--ink);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 0 34px;
+      background: rgba(255,255,255,.92);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      backdrop-filter: blur(12px);
+    }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: -.08em;
+    }
+    .brand-name { font-size: 15px; font-weight: 760; letter-spacing: -.02em; }
+    .brand-sub { color: var(--muted); font-size: 11px; }
+    .top-meta { color: var(--muted); font-size: 13px; }
+    .top-meta strong { color: var(--ink); }
+
+    .app-shell { display: grid; grid-template-columns: 258px minmax(0, 1fr); min-height: calc(100vh - 72px); }
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: #f9fbfe;
+      padding: 26px 16px 30px 22px;
+    }
+    .side-label, .eyebrow {
+      color: #8a9bb0;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    .side-label { margin: 4px 10px 12px; }
+    .side-progress { margin: 0 8px 26px; }
+    .progress-copy { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .progress-copy span { color: var(--muted); }
+    .progress-track { height: 7px; overflow: hidden; background: #e5edf7; border-radius: 9px; }
+    .progress-value { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #3379df, #61a8ea); transition: width .3s ease; }
+    .topic-nav { display: grid; gap: 5px; }
+    .topic-link {
+      width: 100%;
+      display: flex;
+      gap: 11px;
+      align-items: center;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: #536982;
+      padding: 10px;
+      text-align: left;
+      transition: background .15s, color .15s;
+    }
+    .topic-link:hover { background: #eef4fb; }
+    .topic-link.active { background: var(--blue-soft); color: var(--blue-deep); }
+    .topic-number {
+      display: grid;
+      flex: 0 0 28px;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: #edf2f8;
+      color: #6f839b;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .topic-link.active .topic-number { background: #d7e7ff; color: var(--blue); }
+    .topic-name { flex: 1; font-size: 12px; font-weight: 690; }
+    .topic-count { color: #94a4b7; font-size: 11px; }
+    .side-note { margin: 28px 8px 0; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; color: var(--muted); font-size: 11px; }
+    .side-note strong { display: block; color: var(--ink); font-size: 12px; margin-bottom: 4px; }
+
+    main { min-width: 0; padding: 38px clamp(22px, 5vw, 72px) 68px; }
+    .main-wrap { max-width: 1060px; margin: 0 auto; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+      padding: 30px 34px;
+      color: #fff;
+      border-radius: 22px;
+      background: linear-gradient(115deg, #1d4e91 0%, #2867b8 56%, #4c8ed1 100%);
+      box-shadow: 0 18px 40px rgba(37, 88, 154, .18);
+    }
+    .hero:after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: 12%;
+      top: -180px;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 50%;
+      box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 62px rgba(255,255,255,.035);
+    }
+    .hero-copy { position: relative; z-index: 1; max-width: 610px; }
+    .hero .eyebrow { color: #b8d5fa; }
+    h1 { margin: 8px 0 8px; font-size: clamp(26px, 3.3vw, 36px); letter-spacing: -.045em; line-height: 1.16; }
+    .hero p { margin: 0; max-width: 590px; color: #dceaff; font-size: 14px; }
+    .hero-stat {
+      position: relative;
+      z-index: 1;
+      min-width: 104px;
+      padding: 14px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 16px;
+      background: rgba(255,255,255,.1);
+    }
+    .hero-stat strong { display: block; font-size: 25px; line-height: 1.1; }
+    .hero-stat span { display: block; margin-top: 5px; color: #d3e6ff; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; }
+
+    .toolbar { display: flex; align-items: center; gap: 13px; margin: 24px 0 22px; }
+    .search-wrap { position: relative; flex: 1; }
+    .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #8ca0b8; font-size: 18px; pointer-events: none; }
+    .search {
+      width: 100%;
+      height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0 16px 0 43px;
+      outline: none;
+      box-shadow: 0 3px 12px rgba(38, 74, 119, .025);
+    }
+    .search:focus, textarea:focus { border-color: #83afea; box-shadow: 0 0 0 3px rgba(54, 124, 219, .12); }
+    .filter-button, .reset-button {
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0 14px;
+      background: #fff;
+      color: #58708e;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .filter-button:hover, .reset-button:hover { border-color: #bbd0ea; color: var(--blue-deep); }
+    .tag-strip { display: flex; gap: 7px; overflow-x: auto; padding: 1px 0 5px; margin: -12px 0 26px; scrollbar-width: thin; }
+    .tag-chip {
+      white-space: nowrap;
+      border: 1px solid #e1eaf4;
+      border-radius: 99px;
+      background: #fff;
+      color: #71859d;
+      padding: 5px 10px;
+      font-size: 10px;
+      font-weight: 650;
+    }
+    .tag-chip:hover, .tag-chip.selected { background: var(--blue-soft); border-color: #c9ddfb; color: var(--blue-deep); }
+
+    .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin: 0 0 16px; }
+    .section-heading h2 { margin: 3px 0 2px; font-size: 23px; letter-spacing: -.035em; }
+    .section-description { margin: 0; max-width: 690px; color: var(--muted); font-size: 13px; }
+    .source-link { color: #7188a5; font-size: 11px; text-decoration: none; border-bottom: 1px solid #c7d5e5; white-space: nowrap; }
+    .source-link:hover { color: var(--blue); }
+    .topic-progress-row { display: flex; align-items: center; gap: 11px; margin: 18px 0; }
+    .topic-progress-row .progress-track { flex: 1; }
+    .topic-progress-label { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+    .practice-layout { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); align-items: start; gap: 18px; }
+    .exercise-list, .exercise-panel { border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: var(--shadow); }
+    .exercise-list { padding: 12px; }
+    .list-title { padding: 7px 8px 11px; color: #90a0b3; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+    .exercise-row {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 8px;
+      border: 0;
+      border-radius: 11px;
+      background: transparent;
+      text-align: left;
+      color: #526984;
+    }
+    .exercise-row:hover { background: #f5f8fc; }
+    .exercise-row.active { background: #edf4ff; color: var(--blue-deep); }
+    .row-check {
+      display: grid;
+      flex: 0 0 23px;
+      place-items: center;
+      width: 23px;
+      height: 23px;
+      border: 1px solid #dce5ef;
+      border-radius: 8px;
+      color: transparent;
+      font-size: 12px;
+    }
+    .exercise-row.complete .row-check { border-color: #bce7d6; background: var(--mint); color: var(--mint-ink); }
+    .row-text { min-width: 0; flex: 1; }
+    .row-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 690; }
+    .row-meta { display: block; margin-top: 2px; color: #94a4b7; font-size: 10px; }
+    .exercise-panel { min-width: 0; padding: clamp(19px, 3vw, 30px); }
+    .question-top { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+    .question-kicker { color: #8193a9; font-size: 11px; font-weight: 670; }
+    .difficulty {
+      padding: 4px 9px;
+      border-radius: 99px;
+      background: #f0f4f9;
+      color: #6b819a;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .difficulty.easy { background: var(--mint); color: #16835d; }
+    .difficulty.medium { background: var(--amber); color: #a26b12; }
+    .difficulty.hard { background: #fcecec; color: #b95050; }
+    .question-title { margin: 12px 0 8px; font-size: 21px; line-height: 1.3; letter-spacing: -.03em; }
+    .question-prompt { margin: 0; color: #627891; font-size: 13px; }
+    .schema-note { margin: 15px 0 0; padding: 11px 13px; border-radius: 10px; background: #f6f9fd; color: #61758e; font-size: 11px; }
+    .schema-note code { color: #284a72; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 15px 0 20px; }
+    .tag { padding: 4px 8px; border-radius: 7px; background: #f1f5fa; color: #7a8ea6; font-size: 10px; }
+    .answer-area { border-top: 1px solid #edf1f6; padding-top: 19px; }
+    .answer-label { margin-bottom: 10px; color: #506782; font-size: 11px; font-weight: 750; }
+    .options { display: grid; gap: 8px; }
+    .option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #e4ebf3;
+      border-radius: 11px;
+      background: #fff;
+      color: #526981;
+      text-align: left;
+      font-size: 12px;
+      transition: .15s;
+    }
+    .option:hover { border-color: #aac7ed; background: #fafcff; }
+    .option.selected { border-color: #75a5e5; background: #f2f7ff; color: #214f91; }
+    .option.correct { border-color: #a8dfc9; background: #f0fbf6; color: #18764f; }
+    .option.incorrect { border-color: #f0b7b7; background: #fff6f6; color: #a43e3e; }
+    .option-letter {
+      display: grid;
+      flex: 0 0 22px;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      background: #f0f4f8;
+      color: #8394a7;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .option.selected .option-letter { background: #dceaff; color: var(--blue); }
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 136px;
+      resize: vertical;
+      border: 1px solid #dfe8f2;
+      border-radius: 12px;
+      outline: none;
+      background: #fbfcfe;
+      color: #263d57;
+      padding: 14px;
+      font: 12px/1.7 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    }
+    .sql-note { margin-top: 8px; color: #91a0b2; font-size: 10px; }
+    .guide-toggle {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin: 18px 0 0;
+      padding: 11px 12px;
+      border: 1px solid #dce9f8;
+      border-radius: 11px;
+      background: #f7faff;
+      color: #3569a9;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 720;
+    }
+    .guide-toggle:hover { background: #f0f6ff; }
+    .guide { margin: 9px 0 0; padding: 13px 15px 13px 34px; border-radius: 11px; background: #f8fbff; color: #607690; font-size: 11px; }
+    .guide li { padding: 3px 0; }
+    .feedback { display: none; margin-top: 12px; padding: 11px 13px; border-radius: 10px; font-size: 11px; }
+    .feedback.show { display: block; }
+    .feedback.good { background: #effaf5; color: #18764f; }
+    .feedback.try { background: #fff6f1; color: #9c5e28; }
+    .feedback.neutral { background: #f1f6ff; color: #416a9d; }
+    .action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 17px; }
+    .action-left, .action-right { display: flex; align-items: center; gap: 8px; }
+    .primary, .secondary, .text-action {
+      min-height: 39px;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 11px;
+      font-weight: 720;
+    }
+    .primary { border: 1px solid var(--blue); background: var(--blue); color: #fff; }
+    .primary:hover { background: #1d59b3; }
+    .primary:disabled { cursor: not-allowed; opacity: .48; }
+    .secondary { border: 1px solid #dfe7f0; background: #fff; color: #68809a; }
+    .secondary:hover { border-color: #b8cce4; color: #345d8b; }
+    .text-action { border: 0; background: transparent; color: #8797aa; padding: 0 8px; }
+    .text-action:hover { color: #426d9e; }
+    .empty-state { padding: 38px 20px; border: 1px dashed #cbd9e8; border-radius: 16px; color: var(--muted); text-align: center; }
+    .empty-state strong { display: block; color: var(--ink); margin-bottom: 5px; }
+    .footer-note { margin-top: 24px; color: #91a0b2; font-size: 10px; text-align: center; }
+
+    @media (max-width: 920px) {
+      .app-shell { grid-template-columns: 220px minmax(0, 1fr); }
+      .sidebar { padding-left: 14px; padding-right: 12px; }
+      main { padding-left: 24px; padding-right: 24px; }
+      .practice-layout { grid-template-columns: 205px minmax(0, 1fr); gap: 12px; }
+    }
+    @media (max-width: 720px) {
+      .topbar { height: 62px; padding: 0 16px; }
+      .top-meta { font-size: 11px; }
+      .app-shell { display: block; }
+      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 15px; }
+      .side-progress, .side-label, .side-note { display: none; }
+      .topic-nav { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+      .topic-nav::-webkit-scrollbar { display: none; }
+      .topic-link { flex: 0 0 auto; width: auto; padding: 7px 9px; }
+      .topic-name { font-size: 11px; }
+      .topic-count { display: none; }
+      .topic-number { flex-basis: 24px; width: 24px; height: 24px; }
+      main { padding: 20px 14px 40px; }
+      .hero { padding: 24px 20px; border-radius: 17px; }
+      .hero-stat { min-width: 76px; padding: 11px 8px; }
+      .hero-stat strong { font-size: 21px; }
+      .hero-stat span { font-size: 8px; }
+      .toolbar { gap: 8px; margin: 17px 0 20px; }
+      .filter-button { display: none; }
+      .practice-layout { grid-template-columns: 1fr; }
+      .exercise-list { display: flex; overflow-x: auto; gap: 6px; padding: 9px; }
+      .list-title { display: none; }
+      .exercise-row { min-width: 165px; width: auto; border: 1px solid #edf1f6; }
+      .section-heading { align-items: flex-start; }
+      .source-link { display: none; }
+    }
+    @media (max-width: 430px) {
+      .top-meta { display: none; }
+      .hero { align-items: flex-start; }
+      .hero-stat { min-width: 66px; }
+      .hero p { font-size: 12px; }
+      .question-title { font-size: 19px; }
+      .action-row { align-items: flex-end; }
+      .primary, .secondary { padding: 0 10px; }
+      .text-action { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Relational home">
+      <span class="brand-mark">r.</span>
+      <span><span class="brand-name">relational</span><br><span class="brand-sub">DB practice, in order</span></span>
+    </a>
+    <div class="top-meta">Your learning stays <strong>on this device</strong></div>
+  </header>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Course topics">
+      <div class="side-progress">
+        <div class="progress-copy"><strong>Course progress</strong><span id="side-progress-text">0 / 56</span></div>
+        <div class="progress-track" role="progressbar" aria-label="Course progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-value" id="side-progress-bar"></div></div>
+      </div>
+      <div class="side-label">Learning path · easiest to hardest</div>
+      <nav class="topic-nav" id="topic-nav"></nav>
+      <div class="side-note"><strong>Small steps, real fluency</strong>Practice one idea at a time. Optional guides stay tucked away until you need them.</div>
+    </aside>
+
+    <main>
+      <div class="main-wrap">
+        <section class="hero">
+          <div class="hero-copy">
+            <div class="eyebrow">A guided database practice path</div>
+            <h1>Build your SQL instincts,<br>one good query at a time.</h1>
+            <p>Move from simple selections to relational design. Search by concept, try a question, and open a guide only when you want a nudge.</p>
+          </div>
+          <div class="hero-stat"><strong id="hero-completed">0</strong><span>of <b id="hero-total">56</b> complete</span></div>
+        </section>
+
+        <div class="toolbar">
+          <label class="search-wrap">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input id="search" class="search" type="search" placeholder="Search questions, concepts, or tags…" autocomplete="off" aria-label="Search questions and tags">
+          </label>
+          <button class="filter-button" id="all-filter" type="button">All practice</button>
+          <button class="reset-button" id="reset-progress" type="button" title="Clear saved completion progress">Reset</button>
+        </div>
+        <div class="tag-strip" id="tag-strip" aria-label="Popular tags"></div>
+
+        <section class="section-heading">
+          <div>
+            <div class="eyebrow" id="topic-eyebrow">TOPIC 01 · START HERE</div>
+            <h2 id="topic-title">Select &amp; filter</h2>
+            <p class="section-description" id="topic-description"></p>
+          </div>
+          <a class="source-link" id="source-link" href="#" target="_blank" rel="noreferrer">Reference lab ↗</a>
+        </section>
+        <div class="topic-progress-row">
+          <div class="progress-track" role="progressbar" aria-label="Topic progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="topic-progress-bar" class="progress-value"></div></div>
+          <span id="topic-progress-label" class="topic-progress-label">0 of 8 complete</span>
+        </div>
+
+        <div class="practice-layout" id="practice-layout">
+          <nav class="exercise-list" id="exercise-list" aria-label="Questions in this topic"></nav>
+          <article class="exercise-panel" id="exercise-panel" aria-live="polite"></article>
+        </div>
+        <div id="empty-state" class="empty-state" hidden><strong>No matching practice found</strong>Try another search or clear the selected tag.</div>
+        <p class="footer-note">New practice based on the referenced database topics · SQL checks validate key clauses, not a live database result.</p>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const topics = [
+      {
+        id: "select", name: "Select & filter", description: "Start with one table: choose columns, narrow rows, and shape the result.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/querying-data/select/select-statement-2/",
+        questions: [
+          { id: "select-columns", title: "Pick just the columns you need", type: "sql", difficulty: "Easy", tags: ["SELECT", "columns", "basics"], prompt: "Write a query to show each product's name and price from the <code>products</code> table.", schema: "products(productCode, productName, buyPrice, productLine)", starter: "SELECT ...\nFROM ...;", patterns: ["\\bselect\\b", "\\bproductname\\b", "\\bbuyprice\\b", "\\bfrom\\s+products\\b"], solution: "SELECT productName, buyPrice\nFROM products;", guide: ["Name the output columns after SELECT; avoid SELECT * when only two fields are needed.", "Use FROM to identify the source table.", "Check that the column spelling and table name match the schema."], checkText: "Good start — your query selects the requested fields from products." },
+          { id: "select-where", title: "Filter before you display", type: "sql", difficulty: "Easy", tags: ["WHERE", "filter", "basics"], prompt: "Return the product name and stock count for products with fewer than 100 units in stock.", schema: "products(productName, quantityInStock)", starter: "SELECT ...\nFROM products\nWHERE ...;", patterns: ["\\bselect\\b", "\\bproductname\\b", "\\bquantityinstock\\b", "\\bfrom\\s+products\\b", "\\bwhere\\b", "<\\s*100"], solution: "SELECT productName, quantityInStock\nFROM products\nWHERE quantityInStock < 100;", guide: ["Keep only the columns needed in the output.", "WHERE filters individual rows before they appear in the result.", "Use the less-than comparison with the stock column and 100."], checkText: "Correct structure: the row filter is applied with WHERE." },
+          { id: "select-order", title: "Sort and limit results", type: "sql", difficulty: "Easy", tags: ["ORDER BY", "LIMIT", "basics"], prompt: "Show the five most expensive products first. Return product name and price.", schema: "products(productName, buyPrice)", starter: "SELECT ...\nFROM ...\nORDER BY ...\nLIMIT ...;", patterns: ["\\bselect\\b", "\\bproductname\\b", "\\bbuyprice\\b", "\\bfrom\\s+products\\b", "\\border\\s+by\\s+buyprice\\s+desc\\b", "\\blimit\\s+5\\b"], solution: "SELECT productName, buyPrice\nFROM products\nORDER BY buyPrice DESC\nLIMIT 5;", guide: ["Choose the two output fields.", "Descending order puts the highest price first.", "Apply LIMIT 5 after sorting."], checkText: "Nice — sorting comes before limiting the result." },
+          { id: "select-distinct", title: "List unique product lines", type: "sql", difficulty: "Easy", tags: ["DISTINCT", "SELECT", "duplicates"], prompt: "Return each product line only once.", schema: "products(productLine)", starter: "SELECT ...\nFROM products;", patterns: ["\\bselect\\s+distinct\\s+productline\\b", "\\bfrom\\s+products\\b"], solution: "SELECT DISTINCT productLine\nFROM products;", guide: ["Ask whether duplicate values should appear.", "DISTINCT applies to the selected row or set of columns.", "Place DISTINCT immediately after SELECT."], checkText: "Correct — DISTINCT removes duplicate product-line values from the result." },
+          { id: "select-like", title: "Find names with a prefix", type: "sql", difficulty: "Easy", tags: ["LIKE", "wildcards", "WHERE"], prompt: "Find products whose name begins with '1992'. Return the product name.", schema: "products(productName)", starter: "SELECT ...\nFROM products\nWHERE ...;", patterns: ["\\bselect\\b", "\\bproductname\\b", "\\bfrom\\s+products\\b", "\\bwhere\\b", "\\blike\\b", "1992%"], solution: "SELECT productName\nFROM products\nWHERE productName LIKE '1992%';", guide: ["Use LIKE for a text pattern.", "The percent sign matches any sequence after the prefix.", "Keep the pattern in quotes."], checkText: "Good — the trailing wildcard matches any suffix." },
+          { id: "select-in", title: "Match more than one status", type: "sql", difficulty: "Medium", tags: ["IN", "WHERE", "filter"], prompt: "Return orders whose status is either 'Shipped' or 'Resolved'.", schema: "orders(orderNumber, status)", starter: "SELECT ...\nFROM orders\nWHERE ...;", patterns: ["\\bselect\\b", "\\bordernumber\\b", "\\bfrom\\s+orders\\b", "\\bwhere\\b", "\\bstatus\\s+in\\s*\\(", "shipped", "resolved"], solution: "SELECT orderNumber, status\nFROM orders\nWHERE status IN ('Shipped', 'Resolved');", guide: ["Both values are alternatives for the same column.", "IN is a compact alternative to several equality checks joined with OR.", "Text values must be quoted."], checkText: "Correct — IN checks the status against either listed value." },
+          { id: "select-between", title: "Filter an inclusive range", type: "sql", difficulty: "Medium", tags: ["BETWEEN", "range", "WHERE"], prompt: "Find products with a buy price from 50 through 100, including both endpoints.", schema: "products(productName, buyPrice)", starter: "SELECT ...\nFROM products\nWHERE ...;", patterns: ["\\bselect\\b", "\\bproductname\\b", "\\bbuyprice\\b", "\\bfrom\\s+products\\b", "\\bwhere\\b", "\\bbuyprice\\s+between\\s+50\\s+and\\s+100\\b"], solution: "SELECT productName, buyPrice\nFROM products\nWHERE buyPrice BETWEEN 50 AND 100;", guide: ["BETWEEN expresses a range using a lower and upper bound.", "Its endpoints are inclusive.", "Use AND between the two bound values."], checkText: "That range includes prices of exactly 50 and 100." },
+          { id: "select-null", title: "Find rows with a missing value", type: "choice", difficulty: "Medium", tags: ["NULL", "IS NULL", "WHERE"], prompt: "Some customers have no assigned sales representative. Which condition correctly finds them?", options: ["salesRepEmployeeNumber = NULL", "salesRepEmployeeNumber IS NULL", "salesRepEmployeeNumber == ''", "salesRepEmployeeNumber IS EMPTY"], answer: 1, solution: "Use IS NULL (or IS NOT NULL). NULL represents an unknown or missing value and is not tested with ordinary equality.", guide: ["NULL is not an ordinary value such as zero or an empty string.", "Use the dedicated IS NULL predicate.", "Ordinary equality comparisons with NULL do not evaluate to true." ] }
+        ]
+      },
+      {
+        id: "joins", name: "Joins & relationships", description: "Connect related tables through keys and choose whether unmatched rows should remain.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/querying-data/select/select-statement-2/",
+        questions: [
+          { id: "join-inner", title: "Match each order to its customer", type: "sql", difficulty: "Easy", tags: ["JOIN", "INNER JOIN", "foreign key"], prompt: "Show the order number beside the customer name. Keep only orders with a matching customer.", schema: "orders(orderNumber, customerNumber) · customers(customerNumber, customerName)", starter: "SELECT ...\nFROM orders o\nJOIN customers c ON ...;", patterns: ["\\bselect\\b", "\\border\\s*number\\b", "\\bcustomername\\b", "\\bjoin\\s+customers\\b", "\\bon\\b", "o\\.customer\\s*number\\s*=\\s*c\\.customer\\s*number"], solution: "SELECT o.orderNumber, c.customerName\nFROM orders o\nJOIN customers c ON o.customerNumber = c.customerNumber;", guide: ["Use a shared key to relate the two tables.", "An ordinary JOIN (INNER JOIN) returns rows that match on both sides.", "Qualify repeated key names with their table aliases."], checkText: "That join uses the customer key to match orders." },
+          { id: "join-left", title: "Keep customers without orders", type: "choice", difficulty: "Easy", tags: ["JOIN", "LEFT JOIN", "NULL"], prompt: "Which join keeps every row from <code>customers</code>, even when a customer has no matching order?", options: ["INNER JOIN", "LEFT JOIN", "CROSS JOIN", "SELF JOIN"], answer: 1, solution: "LEFT JOIN keeps all rows from the left (customers) table; columns from an unmatched right-side row are NULL.", guide: ["The table written first is the left side.", "Look for a join type that preserves every left-side row.", "A missing match is represented by NULLs in the right-side columns."] },
+          { id: "join-self", title: "Connect employees to managers", type: "sql", difficulty: "Medium", tags: ["SELF JOIN", "aliases", "foreign key"], prompt: "List each employee's first name with their manager's first name. Employees point to managers through <code>reportsTo</code>.", schema: "employees(employeeNumber, firstName, reportsTo)", starter: "SELECT ...\nFROM employees e\nLEFT JOIN employees m ON ...;", patterns: ["\\bselect\\b", "e\\.firstname", "m\\.firstname", "\\bjoin\\s+employees\\s+m\\b", "e\\.reportsto\\s*=\\s*m\\.employeenumber"], solution: "SELECT e.firstName AS employee, m.firstName AS manager\nFROM employees e\nLEFT JOIN employees m ON e.reportsTo = m.employeeNumber;", guide: ["Use the employees table twice, giving each copy a different alias.", "Match the employee's reportsTo value to the manager's employeeNumber.", "A LEFT JOIN can keep top-level employees who have no manager."], checkText: "Good self-join: the two aliases represent different employee roles." },
+          { id: "join-three-tables", title: "Follow a product to its line", type: "sql", difficulty: "Medium", tags: ["JOIN", "three tables", "foreign key"], prompt: "Show each product name and its product-line description.", schema: "products(productName, productLine) · productlines(productLine, textDescription)", starter: "SELECT ...\nFROM products p\nJOIN productlines pl ON ...;", patterns: ["\\bselect\\b", "p\\.productname", "pl\\.textdescription", "\\bjoin\\s+productlines\\s+pl\\b", "p\\.productline\\s*=\\s*pl\\.productline"], solution: "SELECT p.productName, pl.textDescription\nFROM products p\nJOIN productlines pl ON p.productLine = pl.productLine;", guide: ["Identify the foreign key and matching key in the parent table.", "Give both tables short aliases to make the relationship clear.", "Select the requested field from each table."], checkText: "Correct — products connect to productlines through productLine." },
+          { id: "join-count", title: "Predict matching rows", type: "choice", difficulty: "Medium", tags: ["JOIN", "cardinality", "relationships"], prompt: "One customer has three orders. When that customer is joined to orders, how many result rows represent that customer's orders?", options: ["One row", "Three rows", "Four rows", "It must be one row because customerNumber is a key"], answer: 1, solution: "A one-to-many join produces one output row per matching order, so this customer appears three times.", guide: ["A primary key on customers identifies each customer row.", "A foreign key in orders can repeat the same customer number.", "Each matching pair contributes a row to the joined result." ] },
+          { id: "join-qualified", title: "Disambiguate a shared column", type: "choice", difficulty: "Easy", tags: ["JOIN", "aliases", "columns"], prompt: "Both joined tables have a column named <code>customerNumber</code>. How should you refer to the customers table's column?", options: ["customerNumber only", "customers.customerNumber (or its table alias)", "Both.customerNumber", "The second table's customerNumber"], answer: 1, solution: "Qualify a shared column name with its table name or alias to make the reference unambiguous.", guide: ["Look for column names repeated across joined tables.", "Use the alias assigned in the FROM or JOIN clause.", "Qualification also makes the query easier to read." ] },
+          { id: "join-null-filter", title: "Keep unmatched rows while filtering", type: "choice", difficulty: "Hard", tags: ["LEFT JOIN", "WHERE", "NULL"], prompt: "You need every customer, including those with no order. Which approach best preserves customers without a match?", options: ["LEFT JOIN orders, and put order-only filters in the ON clause when appropriate", "Use INNER JOIN and add WHERE orders.orderNumber IS NULL", "Use LEFT JOIN but require orders.orderNumber > 0 in WHERE", "Use CROSS JOIN"], answer: 0, solution: "A WHERE condition on the right-side table can reject NULL-extended rows and effectively undo the preservation of a LEFT JOIN. Put match conditions in ON when unmatched left rows must remain.", guide: ["A LEFT JOIN first preserves left-side rows.", "Unmatched right-side columns become NULL.", "A WHERE predicate on those right-side values may filter those rows out." ] },
+          { id: "join-right", title: "Understand the right side", type: "choice", difficulty: "Easy", tags: ["RIGHT JOIN", "JOIN", "relationships"], prompt: "What does a RIGHT JOIN preserve?", options: ["Every row from the right-hand table, matched or not", "Only rows from the left-hand table", "Only rows that match in both tables", "Every possible pair of rows"], answer: 0, solution: "A RIGHT JOIN retains every row from its right-hand table and fills the left-side columns with NULL when there is no match.", guide: ["Read the join direction relative to the written table order.", "RIGHT JOIN preserves the table written on the right.", "The opposite-side values are NULL when no match exists." ] }
+        ]
+      },
+      {
+        id: "aggregate", name: "Aggregates & groups", description: "Summarize rows into groups, then filter those groups with the right clause.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/querying-data/select/select-statement-4/",
+        questions: [
+          { id: "aggregate-count", title: "Count items in each category", type: "sql", difficulty: "Easy", tags: ["GROUP BY", "COUNT", "aggregate"], prompt: "Count products in each product line. Return the line and its count.", schema: "products(productCode, productLine)", starter: "SELECT ...\nFROM products\nGROUP BY ...;", patterns: ["\\bselect\\b", "\\bproductline\\b", "\\bcount\\s*\\(", "\\bfrom\\s+products\\b", "\\bgroup\\s+by\\s+productline\\b"], solution: "SELECT productLine, COUNT(*) AS productCount\nFROM products\nGROUP BY productLine;", guide: ["COUNT(*) counts rows in each group.", "Select the grouping column beside the aggregate.", "Group by every non-aggregated output column."], checkText: "Correct — each product line gets its own aggregate count." },
+          { id: "aggregate-where", title: "Filter rows before grouping", type: "choice", difficulty: "Medium", tags: ["WHERE", "GROUP BY", "query order"], prompt: "You need a total payment per customer, but only payments greater than 100 should be included before totals are calculated. Which clause filters individual payments?", options: ["WHERE, before GROUP BY", "HAVING, before GROUP BY", "ORDER BY, after GROUP BY", "LIMIT, before SUM"], answer: 0, solution: "WHERE filters source rows before grouping and aggregation. HAVING filters the groups after aggregation.", guide: ["Ask whether the condition concerns a single source row or an aggregate group.", "The amount threshold applies to each payment row.", "Use WHERE for row-level filters." ] },
+          { id: "aggregate-having", title: "Keep only substantial groups", type: "sql", difficulty: "Medium", tags: ["HAVING", "GROUP BY", "SUM"], prompt: "Find customers whose total payments exceed 50,000. Return each customer number and total.", schema: "payments(customerNumber, amount)", starter: "SELECT ...\nFROM payments\nGROUP BY ...\nHAVING ...;", patterns: ["\\bselect\\b", "\\bcustomernumber\\b", "\\bsum\\s*\\(\\s*amount\\s*\\)", "\\bfrom\\s+payments\\b", "\\bgroup\\s+by\\s+customernumber\\b", "\\bhaving\\b", ">\\s*50000"], solution: "SELECT customerNumber, SUM(amount) AS totalPaid\nFROM payments\nGROUP BY customerNumber\nHAVING SUM(amount) > 50000;", guide: ["First group the payment rows by customer number.", "SUM(amount) produces one total per group.", "Use HAVING to test the computed total, not WHERE."], checkText: "Exactly — HAVING filters groups using the aggregate result." },
+          { id: "aggregate-sum", title: "Total each order's line values", type: "sql", difficulty: "Medium", tags: ["SUM", "GROUP BY", "aggregate"], prompt: "Compute each order's total using quantity times unit price.", schema: "orderdetails(orderNumber, quantityOrdered, priceEach)", starter: "SELECT ...\nFROM orderdetails\nGROUP BY ...;", patterns: ["\\bselect\\b", "\\bordernumber\\b", "\\bsum\\s*\\(", "quantityordered\\s*\\*\\s*priceeach", "\\bfrom\\s+orderdetails\\b", "\\bgroup\\s+by\\s+ordernumber\\b"], solution: "SELECT orderNumber, SUM(quantityOrdered * priceEach) AS orderTotal\nFROM orderdetails\nGROUP BY orderNumber;", guide: ["Each order can contain several detail rows.", "Multiply quantity by unit price for each line.", "Sum those line values within each order number."], checkText: "Correct — the sum is calculated separately for each order." },
+          { id: "aggregate-count-distinct", title: "Count distinct customers", type: "sql", difficulty: "Medium", tags: ["COUNT DISTINCT", "GROUP BY", "aggregate"], prompt: "Count how many different customers placed orders in each status.", schema: "orders(orderNumber, customerNumber, status)", starter: "SELECT ...\nFROM orders\nGROUP BY ...;", patterns: ["\\bselect\\b", "\\bstatus\\b", "\\bcount\\s*\\(\\s*distinct\\s+customernumber\\s*\\)", "\\bfrom\\s+orders\\b", "\\bgroup\\s+by\\s+status\\b"], solution: "SELECT status, COUNT(DISTINCT customerNumber) AS customerCount\nFROM orders\nGROUP BY status;", guide: ["A customer may place multiple orders with the same status.", "COUNT(DISTINCT ...) counts each customer once within the group.", "Group by status to get one result for each status."], checkText: "Good — DISTINCT prevents repeat orders from overcounting a customer." },
+          { id: "aggregate-having-count", title: "Find groups with enough members", type: "sql", difficulty: "Hard", tags: ["HAVING", "COUNT", "GROUP BY"], prompt: "List product lines containing at least 10 products.", schema: "products(productCode, productLine)", starter: "SELECT ...\nFROM products\nGROUP BY ...\nHAVING ...;", patterns: ["\\bselect\\b", "\\bproductline\\b", "\\bcount\\s*\\(", "\\bfrom\\s+products\\b", "\\bgroup\\s+by\\s+productline\\b", "\\bhaving\\b", ">=\\s*10"], solution: "SELECT productLine, COUNT(*) AS productCount\nFROM products\nGROUP BY productLine\nHAVING COUNT(*) >= 10;", guide: ["Group product rows by product line.", "Count the rows in each group.", "Use HAVING because the threshold applies to the aggregate count."], checkText: "Exactly — HAVING filters each grouped product-line count." },
+          { id: "aggregate-null", title: "Know what COUNT counts", type: "choice", difficulty: "Hard", tags: ["COUNT", "NULL", "aggregate"], prompt: "What is the difference between COUNT(*) and COUNT(salesRepEmployeeNumber)?", options: ["COUNT(*) counts rows; COUNT(column) counts non-NULL values in that column.", "They both count only non-NULL values.", "COUNT(column) counts distinct values automatically.", "COUNT(*) ignores rows with NULL in any column."], answer: 0, solution: "COUNT(*) counts rows, while COUNT(column) counts rows where that expression is not NULL.", guide: ["Consider a row with a NULL sales representative.", "COUNT(*) still counts the row.", "COUNT(column) skips that NULL value." ] },
+          { id: "aggregate-average", title: "Average within each category", type: "sql", difficulty: "Medium", tags: ["AVG", "GROUP BY", "aggregate"], prompt: "Show the average buy price for products in each product line.", schema: "products(productLine, buyPrice)", starter: "SELECT ...\nFROM products\nGROUP BY ...;", patterns: ["\\bselect\\b", "\\bproductline\\b", "\\bavg\\s*\\(\\s*buyprice\\s*\\)", "\\bfrom\\s+products\\b", "\\bgroup\\s+by\\s+productline\\b"], solution: "SELECT productLine, AVG(buyPrice) AS averageBuyPrice\nFROM products\nGROUP BY productLine;", guide: ["Choose productLine as the group key.", "AVG calculates the mean within each group.", "Group by the selected category."], checkText: "Correct — each product line gets its own average buy price." }
+        ]
+      },
+      {
+        id: "cte", name: "CTEs & subqueries", description: "Break a longer query into named, readable steps and build a recursive path.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/querying-data/select/sql_select_statement_6_interactive_lab_v2_columns.html",
+        questions: [
+          { id: "cte-basic", title: "Give a filtered result a name", type: "sql", difficulty: "Medium", tags: ["CTE", "WITH", "readability"], prompt: "Create a CTE named <code>large_orders</code> for orders with a total value above 10,000, then select all its columns.", schema: "order_totals(orderNumber, totalValue)", starter: "WITH ... AS (\n  SELECT ...\n)\nSELECT ...;", patterns: ["\\bwith\\s+large_orders\\s+as\\s*\\(", "\\bselect\\b", "\\bfrom\\s+order_totals\\b", "\\bwhere\\b", "totalvalue\\s*>\\s*10000", "\\bselect\\s+\\*\\s+from\\s+large_orders\\b"], solution: "WITH large_orders AS (\n  SELECT orderNumber, totalValue\n  FROM order_totals\n  WHERE totalValue > 10000\n)\nSELECT * FROM large_orders;", guide: ["A CTE starts with WITH followed by a name and AS (...).", "Put the filtering query inside the parentheses.", "The final SELECT reads from the CTE name."], checkText: "Your query has a named CTE and a final read from it." },
+          { id: "cte-multiple", title: "Chain two query steps", type: "choice", difficulty: "Medium", tags: ["CTE", "WITH", "query structure"], prompt: "When defining two CTEs in one WITH clause, how are the CTE definitions normally separated?", options: ["With a comma", "With a semicolon after each CTE", "With UNION only", "With a second WITH keyword"], answer: 0, solution: "Separate CTE definitions with a comma, then write one statement that can use them.", guide: ["A WITH clause introduces one or more named query expressions.", "Only the full SQL statements need statement terminators.", "The definitions form a comma-separated list." ] },
+          { id: "cte-recursive", title: "Spot the recursive structure", type: "choice", difficulty: "Hard", tags: ["WITH RECURSIVE", "CTE", "hierarchy"], prompt: "A recursive employee hierarchy needs a starting row and a repeated step. Which structure connects them?", options: ["Anchor query UNION ALL recursive query", "Two independent SELECT statements", "GROUP BY followed by HAVING", "A self-join without a CTE"], answer: 0, solution: "A recursive CTE combines an anchor (starting rows) and a recursive member, commonly with UNION ALL.", guide: ["The anchor establishes the initial row or rows.", "The recursive member joins the prior result to the next level.", "UNION ALL combines those parts inside WITH RECURSIVE." ] },
+          { id: "cte-multiple-sql", title: "Define two named query steps", type: "sql", difficulty: "Medium", tags: ["CTE", "WITH", "multiple CTEs"], prompt: "Define <code>paid_totals</code> as total payments by customer, then select from that CTE.", schema: "payments(customerNumber, amount)", starter: "WITH ... AS (\n  SELECT ...\n  FROM payments\n  GROUP BY ...\n)\nSELECT ...;", patterns: ["\\bwith\\s+paid_totals\\s+as\\s*\\(", "\\bsum\\s*\\(\\s*amount\\s*\\)", "\\bcustomernumber\\b", "\\bfrom\\s+payments\\b", "\\bgroup\\s+by\\s+customernumber\\b", "\\bselect\\s+\\*\\s+from\\s+paid_totals\\b"], solution: "WITH paid_totals AS (\n  SELECT customerNumber, SUM(amount) AS totalPaid\n  FROM payments\n  GROUP BY customerNumber\n)\nSELECT * FROM paid_totals;", guide: ["Give the CTE a descriptive name and start its definition with AS (...).", "Aggregate payments once per customer inside the CTE.", "Read the named result in the final SELECT."], checkText: "Good — the CTE isolates the grouped payment totals." },
+          { id: "cte-scope", title: "Understand a CTE's scope", type: "choice", difficulty: "Easy", tags: ["CTE", "WITH", "scope"], prompt: "A regular CTE defined with WITH is generally available for how long?", options: ["For the single statement immediately following its WITH clause", "For every connection forever", "Until the database server restarts", "Only inside the CTE definition itself"], answer: 0, solution: "A non-recursive CTE is a named result available to the statement that follows the WITH clause.", guide: ["A CTE is not a permanent table.", "It is declared at the start of a statement.", "A later independent statement needs its own WITH clause or a persistent object." ] },
+          { id: "cte-window-filter", title: "Filter a calculated row number", type: "choice", difficulty: "Hard", tags: ["CTE", "window", "subquery"], prompt: "You assign ROW_NUMBER() in a SELECT and want only rows with row number 1. Why wrap that query in a CTE or subquery?", options: ["The window result is computed in the SELECT phase, so an outer query can filter it with WHERE.", "WHERE always runs after the SELECT list.", "CTEs convert every query to a temporary table.", "ROW_NUMBER can only be used with GROUP BY."], answer: 0, solution: "Window functions are evaluated after WHERE in the same query block. An outer query or CTE makes the computed value available to a later WHERE.", guide: ["The inner query computes the window value.", "Give the computed column an alias.", "Filter that alias from an outer SELECT." ] },
+          { id: "cte-union", title: "Choose the recursive combination", type: "choice", difficulty: "Medium", tags: ["WITH RECURSIVE", "UNION ALL", "hierarchy"], prompt: "Which operator is commonly used between the anchor and recursive member in a recursive CTE?", options: ["UNION ALL", "INTERSECT", "CROSS JOIN", "EXCEPT"], answer: 0, solution: "UNION ALL combines the anchor rows with each recursive step and does not remove duplicates at every iteration.", guide: ["The anchor provides the base case.", "The recursive member repeatedly derives additional rows.", "UNION ALL is the standard combining operator for the two members." ] },
+          { id: "cte-ordering", title: "Keep ordering in the final query", type: "choice", difficulty: "Hard", tags: ["CTE", "ORDER BY", "query structure"], prompt: "You need a CTE's final output sorted by total amount. Where should the presentation ORDER BY normally go?", options: ["In the final SELECT that returns the result", "Only inside the CTE, with no outer ORDER BY", "Inside every CTE whether needed or not", "In the WITH keyword"], answer: 0, solution: "Put the ORDER BY in the outermost SELECT whose output order you need; ordering inside a CTE does not generally guarantee final result order.", guide: ["Relational results have no guaranteed order without ORDER BY.", "The final query determines the order users see.", "Use an inner ordering only when it is part of a specific operation such as limiting rows." ] }
+        ]
+      },
+      {
+        id: "windows", name: "Window functions", description: "Calculate rankings and running values while keeping each detail row visible.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/querying-data/select/sql_window_functions_interactive_lab.html",
+        questions: [
+          { id: "window-rank", title: "Rank within each region", type: "sql", difficulty: "Medium", tags: ["window", "RANK", "PARTITION BY"], prompt: "Rank sales from largest to smallest within each region, keeping every sale in the result.", schema: "sales(saleId, region, amount)", starter: "SELECT ...,\n       ... OVER (...)\nFROM sales;", patterns: ["\\bselect\\b", "\\bfrom\\s+sales\\b", "\\brank\\s*\\(\\s*\\)\\s+over\\s*\\(", "\\bpartition\\s+by\\s+region\\b", "\\border\\s+by\\s+amount\\s+desc\\b"], solution: "SELECT saleId, region, amount,\n       RANK() OVER (PARTITION BY region ORDER BY amount DESC) AS regionRank\nFROM sales;", guide: ["RANK() assigns ranking values while preserving every input row.", "PARTITION BY restarts the ranking for each region.", "ORDER BY amount DESC puts larger sales first."], checkText: "Great — the window partitions by region and ranks in descending order." },
+          { id: "window-vs-group", title: "Keep detail rows in the result", type: "choice", difficulty: "Medium", tags: ["window", "GROUP BY", "concept"], prompt: "Which statement best describes a window function compared with GROUP BY?", options: ["A window function can calculate across related rows without collapsing each group into one row.", "A window function always removes duplicate rows.", "GROUP BY and a window function always return identical row counts.", "A window function can only sort the final result."], answer: 0, solution: "Window functions compute values over a related set of rows while retaining the individual rows.", guide: ["Consider whether each original event should remain visible.", "GROUP BY typically returns one result per group.", "A window function adds a calculation to the row-level result." ] },
+          { id: "window-running", title: "Build a running total", type: "sql", difficulty: "Hard", tags: ["window", "SUM", "ROWS"], prompt: "Calculate a running amount per representative, ordered by sale date and then sale ID.", schema: "sales(saleId, salesRep, saleDate, amount)", starter: "SELECT ...,\n       SUM(...) OVER (\n         PARTITION BY ...\n         ORDER BY ...\n         ROWS BETWEEN ...\n       ) AS runningTotal\nFROM sales;", patterns: ["\\bsum\\s*\\(\\s*amount\\s*\\)\\s+over\\s*\\(", "\\bpartition\\s+by\\s+salesrep\\b", "\\border\\s+by\\s+saledate\\s*,\\s*saleid\\b", "\\brows\\s+between\\s+unbounded\\s+preceding\\s+and\\s+current\\s+row\\b"], solution: "SELECT saleId, salesRep, saleDate, amount,\n       SUM(amount) OVER (\n         PARTITION BY salesRep\n         ORDER BY saleDate, saleId\n         ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n       ) AS runningTotal\nFROM sales;", guide: ["SUM(amount) OVER (...) calculates without grouping rows away.", "Partition by representative so each running total restarts.", "Use a stable ordering, then define the frame from the first row through the current one."], checkText: "Correct window frame: the running sum starts at the partition's first row." },
+          { id: "window-row-number", title: "Number rows within each group", type: "sql", difficulty: "Medium", tags: ["window", "ROW_NUMBER", "PARTITION BY"], prompt: "Number sales from newest to oldest separately for each representative.", schema: "sales(saleId, salesRep, saleDate)", starter: "SELECT ...,\n       ROW_NUMBER() OVER (...) AS rowNum\nFROM sales;", patterns: ["\\brow_number\\s*\\(\\s*\\)\\s+over\\s*\\(", "\\bpartition\\s+by\\s+salesrep\\b", "\\border\\s+by\\s+saledate\\s+desc\\b"], solution: "SELECT saleId, salesRep, saleDate,\n       ROW_NUMBER() OVER (PARTITION BY salesRep ORDER BY saleDate DESC, saleId) AS rowNum\nFROM sales;", guide: ["ROW_NUMBER gives each row a distinct sequence number.", "Partition by representative to restart the numbering.", "Order by date descending; add a tie-breaker to make the sequence stable."], checkText: "Correct — numbering restarts for each representative." },
+          { id: "window-ranking-ties", title: "Choose a ranking function", type: "choice", difficulty: "Medium", tags: ["RANK", "DENSE_RANK", "window"], prompt: "For scores 100, 100, 90, which function assigns the last score rank 3 rather than rank 4?", options: ["DENSE_RANK()", "RANK()", "ROW_NUMBER()", "NTILE(3)"], answer: 0, solution: "DENSE_RANK gives tied values the same rank without leaving gaps; RANK leaves a gap after ties.", guide: ["The two highest scores are tied.", "RANK returns 1, 1, 3.", "DENSE_RANK returns 1, 1, 2." ] },
+          { id: "window-lag", title: "Compare with the previous row", type: "sql", difficulty: "Hard", tags: ["LAG", "window", "ORDER BY"], prompt: "Show each sale amount alongside the previous sale amount for the same representative, ordered by date.", schema: "sales(saleId, salesRep, saleDate, amount)", starter: "SELECT ...,\n       LAG(...) OVER (...) AS previousAmount\nFROM sales;", patterns: ["\\blag\\s*\\(\\s*amount\\s*\\)", "\\bover\\s*\\(", "\\bpartition\\s+by\\s+salesrep\\b", "\\border\\s+by\\s+saledate\\b"], solution: "SELECT saleId, salesRep, saleDate, amount,\n       LAG(amount) OVER (PARTITION BY salesRep ORDER BY saleDate, saleId) AS previousAmount\nFROM sales;", guide: ["LAG reads a value from a preceding row in the window order.", "Partition by representative so values do not cross between people.", "Order by date and use a stable tie-breaker."], checkText: "Good — LAG looks backward within each representative's ordered partition." },
+          { id: "window-filter", title: "Filter a window result safely", type: "choice", difficulty: "Hard", tags: ["window", "WHERE", "CTE"], prompt: "Why can't a query generally filter a window alias in its own WHERE clause?", options: ["WHERE is evaluated before the window function; use an outer query or CTE.", "WHERE is evaluated after ORDER BY.", "Window functions cannot return numeric values.", "Aliases are never allowed in SQL."], answer: 0, solution: "Window functions are computed after WHERE in the query's logical processing order. Wrap the window query and filter its result outside.", guide: ["First compute the window value in a SELECT.", "Use a CTE or subquery to make that result a row source.", "Filter the computed column in the outer WHERE." ] },
+          { id: "window-ntile", title: "Divide ordered rows into buckets", type: "choice", difficulty: "Medium", tags: ["NTILE", "window", "ORDER BY"], prompt: "What does NTILE(4) do when used as a window function?", options: ["Distributes ordered rows into four buckets as evenly as possible.", "Returns the four largest values.", "Creates four partitions based on a column automatically.", "Counts four rows in each group."], answer: 0, solution: "NTILE(n) assigns bucket numbers from 1 to n across rows in the window ordering, distributing rows as evenly as possible.", guide: ["NTILE is a window function, not a filter.", "Its argument is the desired number of buckets.", "An OVER clause defines which ordered rows are distributed." ] }
+        ]
+      },
+      {
+        id: "indexes", name: "Indexes & query plans", description: "Reason about access paths, composite index order, and what EXPLAIN can tell you.", source: "https://vudmvn.github.io/dbms-course/lectures/MySQL/index-optimization/index/dbms_index_1_interactive_lab.html",
+        questions: [
+          { id: "index-purpose", title: "Choose an index for a lookup", type: "choice", difficulty: "Medium", tags: ["index", "B-tree", "performance"], prompt: "A table is often searched by exact <code>country</code>. What is a reasonable first index to evaluate?", options: ["A B-tree index on country", "An index on every column without checking queries", "A full-table copy for each country", "No index can help equality filters"], answer: 0, solution: "A B-tree index on a frequently filtered column may help, but its value should be measured against the workload and write cost.", guide: ["Start from the actual query predicate.", "A single-column index may support equality lookup.", "Indexes also use storage and add write-maintenance cost; measure the plan." ] },
+          { id: "index-composite", title: "Respect leftmost column order", type: "choice", difficulty: "Hard", tags: ["composite index", "index", "leftmost prefix"], prompt: "An index is defined on <code>(customer_id, order_date)</code>. Which query most directly benefits from its leftmost prefix?", options: ["Filter by customer_id, optionally with an order_date range", "Filter by order_date only, in every case", "Filter by an unrelated status column", "Sort by any column in any order"], answer: 0, solution: "A composite index can be used from its leading column(s). A lookup on only the second column generally cannot use the same prefix as directly.", guide: ["Composite index order matters.", "The leftmost field is the start of the ordered index key.", "Use EXPLAIN on representative queries to confirm optimizer behavior." ] },
+          { id: "index-explain", title: "Read a plan, not a promise", type: "choice", difficulty: "Hard", tags: ["EXPLAIN", "optimizer", "index"], prompt: "An index exists on a filtered column, but EXPLAIN shows a table scan. What is the safest conclusion?", options: ["The optimizer chose a plan; investigate the query, data distribution, and plan details.", "The database is broken because every index must be used.", "The index guarantees the query is fast.", "Drop all other indexes immediately."], answer: 0, solution: "An available index is not a guarantee of index use; the optimizer estimates costs from query shape and data statistics.", guide: ["EXPLAIN reports the chosen plan for the query.", "Index presence does not force the optimizer to use it.", "Compare representative queries and data; do not infer real performance from a mock catalog." ] },
+          { id: "index-create", title: "Create a composite index", type: "sql", difficulty: "Medium", tags: ["CREATE INDEX", "composite index", "SQL"], prompt: "Create an index for order searches by customer and then order date.", schema: "order_search(customer_id, order_date)", starter: "CREATE INDEX ...\nON ... (...);", patterns: ["\\bcreate\\s+index\\s+idx_order_customer_date\\b", "\\bon\\s+order_search\\s*\\(", "customer_id\\s*,\\s*order_date"], solution: "CREATE INDEX idx_order_customer_date\nON order_search(customer_id, order_date);", guide: ["Name the index so its purpose is recognizable.", "Choose the target table after ON.", "Preserve the intended left-to-right column order."], checkText: "Good — the composite index starts with customer_id, then order_date." },
+          { id: "index-leading", title: "Use the leading index column", type: "choice", difficulty: "Medium", tags: ["composite index", "leftmost prefix", "index"], prompt: "A B-tree index is ordered by (country, credit_limit). Which condition can most directly use its leading prefix?", options: ["country = 'Canada'", "credit_limit > 50000, with no country condition in every case", "first_name = 'Ada'", "Any arbitrary column condition"], answer: 0, solution: "The composite index begins with country, so a predicate on that leading column can use its leftmost prefix.", guide: ["A composite index is ordered by its first key, then subsequent keys.", "Start by checking whether the query constrains the first key.", "Do not assume the second column alone can use the same prefix." ] },
+          { id: "index-explain-sql", title: "Inspect an access plan", type: "sql", difficulty: "Easy", tags: ["EXPLAIN", "query plan", "SQL"], prompt: "Write an EXPLAIN statement for a lookup of a customer by customer_id.", schema: "order_search(customer_id, order_date)", starter: "EXPLAIN SELECT ...;", patterns: ["\\bexplain\\s+select\\b", "\\bfrom\\s+order_search\\b", "\\bwhere\\s+customer_id\\s*="], solution: "EXPLAIN SELECT *\nFROM order_search\nWHERE customer_id = 103;", guide: ["EXPLAIN precedes the query whose plan you want to inspect.", "Use the table and filter from the lookup.", "A plan describes optimizer choices; it is not itself a runtime measurement."], checkText: "Correct — EXPLAIN asks the database to report the query plan." },
+          { id: "index-tradeoff", title: "Balance reads and writes", type: "choice", difficulty: "Medium", tags: ["index", "trade-offs", "performance"], prompt: "Why not create an index on every column of every table?", options: ["Indexes consume storage and add maintenance work to inserts, updates, and deletes.", "Indexes always make reads slower.", "A table can have only one index.", "Indexes prevent all duplicate values."], answer: 0, solution: "Indexes can improve some reads, but they consume storage and must be maintained as data changes. Add them based on measured workload.", guide: ["An index has a storage cost.", "Writes may need to update multiple index structures.", "Evaluate likely query benefit against those costs." ] },
+          { id: "index-drop", title: "Remove an unnecessary index", type: "sql", difficulty: "Hard", tags: ["DROP INDEX", "index", "maintenance"], prompt: "Write MySQL syntax to drop the index <code>idx_customer_country</code> from <code>customer_search</code>.", schema: "customer_search(customer_id, country)", starter: "DROP INDEX ...\nON ...;", patterns: ["\\bdrop\\s+index\\s+idx_customer_country\\b", "\\bon\\s+customer_search\\b"], solution: "DROP INDEX idx_customer_country ON customer_search;", guide: ["MySQL specifies the index name after DROP INDEX.", "Use ON followed by the table that owns the index.", "Dropping an index changes schema metadata, so verify the target first."], checkText: "Correct MySQL form: the owning table follows ON." }
+        ]
+      },
+      {
+        id: "normalization", name: "Dependencies & normalization", description: "Use business rules to reason about keys, functional dependencies, and well-structured tables.", source: "https://vudmvn.github.io/dbms-course/lectures/normalization/normal-forms/dbms_normalization_interactive_v2_fd.html",
+        questions: [
+          { id: "fd-meaning", title: "Read a functional dependency", type: "choice", difficulty: "Medium", tags: ["functional dependency", "FD", "determinant"], prompt: "Given <code>StudentID → StudentName</code>, what does the rule say?", options: ["For any two valid rows with the same StudentID, StudentName must also match.", "StudentName uniquely identifies each StudentID.", "Every StudentID must appear exactly once in every table.", "The sample rows prove this rule for all future data."], answer: 0, solution: "A functional dependency is a business rule: equal determinant values must imply equal dependent values. It cannot be inferred just from a few sample rows.", guide: ["Read the arrow from left to right.", "The left side is the determinant; the right side is determined.", "Do not reverse the arrow unless another rule says it holds." ] },
+          { id: "fd-closure", title: "Compute an attribute closure", type: "choice", difficulty: "Hard", tags: ["closure", "candidate key", "FD"], prompt: "For R(A, B, C, D) with dependencies A → B, B → C, and C → D, what is A⁺?", options: ["{A}", "{A, B}", "{A, B, C}", "{A, B, C, D}"], answer: 3, solution: "Start with {A}; apply A → B, then B → C, then C → D. The closure contains every attribute, so A is a superkey (and a candidate key here).", guide: ["Initialize the closure with the chosen set: {A}.", "Repeatedly apply each dependency whose left side is already in the closure.", "Stop when a full pass adds nothing new." ] },
+          { id: "normal-forms", title: "Find the partial dependency", type: "choice", difficulty: "Hard", tags: ["2NF", "normalization", "candidate key"], prompt: "A relation has candidate key (StudentID, CourseID), plus StudentName and Grade. Which dependency suggests a 2NF issue?", options: ["(StudentID, CourseID) → Grade", "StudentID → StudentName", "CourseID → StudentID", "Grade → CourseID"], answer: 1, solution: "StudentName depends on only part of the composite candidate key. A non-key attribute with that partial dependency violates 2NF.", guide: ["First identify the composite key attributes.", "Ask whether a non-key attribute depends on the entire key or only part.", "A dependency from StudentID alone to StudentName is partial." ] },
+          { id: "normal-1nf", title: "Spot a 1NF problem", type: "choice", difficulty: "Easy", tags: ["1NF", "atomic values", "normalization"], prompt: "A customer row stores phone numbers as the single string <code>'555-0101, 555-0102'</code>. What is the main concern?", options: ["The phone field contains multiple values instead of one atomic value.", "The table is automatically in BCNF.", "A comma makes the field a primary key.", "The table must use a window function."], answer: 0, solution: "First normal form expects a single value per cell in the context of the domain, rather than a repeating list packed into one field.", guide: ["Check whether a cell holds one value or a list.", "Packed lists are difficult to validate, search, and update consistently.", "Represent repeating phone values as separate related rows when the model requires them." ] },
+          { id: "normal-3nf", title: "Trace a transitive dependency", type: "choice", difficulty: "Medium", tags: ["3NF", "transitive dependency", "normalization"], prompt: "In Student(StudentID, DeptID, DeptName), the rules are StudentID → DeptID and DeptID → DeptName. Which fact explains a possible 3NF problem?", options: ["DeptName depends transitively on StudentID through DeptID.", "StudentID does not determine DeptID.", "DeptName is necessarily a candidate key.", "The relation contains no functional dependencies."], answer: 0, solution: "The chain StudentID → DeptID → DeptName makes DeptName transitively dependent on the student key; separating department facts can avoid update anomalies.", guide: ["Follow the dependency chain starting at the key.", "Ask whether a non-key attribute determines another non-key attribute.", "A department relation can store DeptID and DeptName once." ] },
+          { id: "normal-bcnf", title: "Check a BCNF determinant", type: "choice", difficulty: "Hard", tags: ["BCNF", "superkey", "functional dependency"], prompt: "For every non-trivial functional dependency X → Y, what does BCNF require of X?", options: ["X must be a superkey.", "Y must be a superkey.", "X must contain exactly one attribute.", "Y must be a prime attribute in every case."], answer: 0, solution: "BCNF requires every determinant of a non-trivial functional dependency to be a superkey.", guide: ["A determinant is the left-hand side X.", "Compute or reason about X's closure.", "If X does not determine all attributes, it is not a superkey and the relation violates BCNF." ] },
+          { id: "normal-4nf", title: "Separate independent multi-valued facts", type: "choice", difficulty: "Hard", tags: ["4NF", "multivalued dependency", "normalization"], prompt: "A person can independently have many languages and many hobbies. Storing every language-hobby combination creates repeated combinations. Which design idea addresses this?", options: ["Store the independent multi-valued facts in separate relations.", "Duplicate every person row until each hobby is unique.", "Add both lists as comma-separated strings.", "Create a window function for each hobby."], answer: 0, solution: "When language and hobby sets are independent multi-valued facts about a person, separate relations avoid the cross-product redundancy associated with a non-trivial multivalued dependency.", guide: ["Check whether the two lists are independent of each other.", "A combined table stores every language-hobby pairing.", "Separate person-language and person-hobby relations when the business rules support independence." ] },
+          { id: "normal-key", title: "Distinguish a superkey from a candidate key", type: "choice", difficulty: "Medium", tags: ["candidate key", "superkey", "closure"], prompt: "A set of attributes determines every attribute in a relation. What extra property makes it a candidate key rather than merely a superkey?", options: ["It is minimal: no proper subset still determines every attribute.", "It contains every attribute.", "It must be a single column.", "It must appear as a foreign key in another table."], answer: 0, solution: "A candidate key is a minimal superkey. Any superset of a candidate key is a superkey but not minimal.", guide: ["A superkey functionally determines all attributes.", "Test whether removing any attribute preserves that property.", "Minimality distinguishes a candidate key." ] }
+        ]
+      }
+    ];
+
+    const flatQuestions = topics.flatMap(topic => topic.questions.map(question => ({ ...question, topicId: topic.id })));
+    const state = { topicId: topics[0].id, questionId: topics[0].questions[0].id, query: "", tag: "", selected: null, checked: false, guideOpen: false, showSolution: false, done: new Set() };
+    const $ = selector => document.querySelector(selector);
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+    const topicById = id => topics.find(topic => topic.id === id);
+    const questionById = id => flatQuestions.find(question => question.id === id);
+    const matchingQuestions = () => flatQuestions.filter(question => {
+      const topic = topicById(question.topicId);
+      const searchable = `${question.title} ${question.prompt.replace(/<[^>]*>/g, " ")} ${question.tags.join(" ")} ${topic.name}`.toLowerCase();
+      return (!state.query || searchable.includes(state.query.toLowerCase())) && (!state.tag || question.tags.includes(state.tag));
+    });
+
+    function loadProgress() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("relational-progress") || "[]");
+        if (Array.isArray(saved)) state.done = new Set(saved.filter(id => flatQuestions.some(question => question.id === id)));
+      } catch (error) {
+        console.warn("Saved progress could not be read.", error);
+      }
+    }
+
+    function saveProgress() {
+      try {
+        localStorage.setItem("relational-progress", JSON.stringify([...state.done]));
+      } catch (error) {
+        announce("Progress could not be saved in this browser.");
+        console.warn("Saved progress could not be written.", error);
+      }
+    }
+
+    function announce(message) {
+      const feedback = $("#feedback");
+      if (!feedback) return;
+      feedback.className = "feedback show neutral";
+      feedback.textContent = message;
+    }
+
+    function renderNav() {
+      $("#topic-nav").innerHTML = topics.map((topic, index) => {
+        const complete = topic.questions.filter(question => state.done.has(question.id)).length;
+        return `<button class="topic-link ${topic.id === state.topicId ? "active" : ""}" type="button" data-topic="${topic.id}" aria-current="${topic.id === state.topicId ? "page" : "false"}">
+          <span class="topic-number">${String(index + 1).padStart(2, "0")}</span><span class="topic-name">${topic.name}</span><span class="topic-count">${complete}/${topic.questions.length}</span>
+        </button>`;
+      }).join("");
+      $("#topic-nav").querySelectorAll("[data-topic]").forEach(button => button.addEventListener("click", () => selectTopic(button.dataset.topic)));
+    }
+
+    function renderTags() {
+      const uniqueTags = [...new Set(flatQuestions.flatMap(question => question.tags))];
+      $("#tag-strip").innerHTML = uniqueTags.map(tag => `<button type="button" class="tag-chip ${state.tag === tag ? "selected" : ""}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join("");
+      $("#tag-strip").querySelectorAll("[data-tag]").forEach(button => button.addEventListener("click", () => {
+        state.tag = state.tag === button.dataset.tag ? "" : button.dataset.tag;
+        showFirstMatch();
+      }));
+    }
+
+    function renderProgress() {
+      const total = flatQuestions.length;
+      const complete = state.done.size;
+      const percent = total ? Math.round(complete / total * 100) : 0;
+      $("#hero-completed").textContent = complete;
+      $("#hero-total").textContent = total;
+      $("#side-progress-text").textContent = `${complete} / ${total}`;
+      $("#side-progress-bar").style.width = `${percent}%`;
+      $("#side-progress-bar").parentElement.setAttribute("aria-valuenow", percent);
+      const topic = topicById(state.topicId);
+      const topicDone = topic.questions.filter(question => state.done.has(question.id)).length;
+      const topicPercent = Math.round(topicDone / topic.questions.length * 100);
+      $("#topic-progress-bar").style.width = `${topicPercent}%`;
+      $("#topic-progress-bar").parentElement.setAttribute("aria-valuenow", topicPercent);
+      $("#topic-progress-label").textContent = `${topicDone} of ${topic.questions.length} complete`;
+      renderNav();
+    }
+
+    function renderTopic() {
+      const topic = topicById(state.topicId);
+      $("#topic-eyebrow").textContent = `TOPIC ${String(topics.indexOf(topic) + 1).padStart(2, "0")} · ${topics.indexOf(topic) === 0 ? "START HERE" : "NEXT STEP"}`;
+      $("#topic-title").textContent = topic.name;
+      $("#topic-description").textContent = topic.description;
+      $("#source-link").href = topic.source;
+      $("#source-link").style.display = "inline";
+      const matches = matchingQuestions().filter(question => question.topicId === topic.id);
+      $("#exercise-list").innerHTML = `<div class="list-title">Practice · ${matches.length} ${matches.length === 1 ? "question" : "questions"}</div>` + matches.map((question, index) => `
+        <button type="button" class="exercise-row ${question.id === state.questionId ? "active" : ""} ${state.done.has(question.id) ? "complete" : ""}" data-question="${question.id}">
+          <span class="row-check" aria-label="${state.done.has(question.id) ? "Complete" : "Not complete"}">✓</span>
+          <span class="row-text"><span class="row-name">${escapeHtml(question.title)}</span><span class="row-meta">${question.type === "sql" ? "SQL lab" : "Quick quiz"} · ${question.difficulty}</span></span>
+        </button>`).join("");
+      $("#exercise-list").querySelectorAll("[data-question]").forEach(button => button.addEventListener("click", () => selectQuestion(button.dataset.question)));
+      renderProgress();
+    }
+
+    function renderQuestion() {
+      const question = questionById(state.questionId);
+      const topic = topicById(state.topicId);
+      if (!question || !topic) return;
+      const currentIndex = topic.questions.findIndex(item => item.id === question.id);
+      const guide = state.guideOpen ? `<ol class="guide">${question.guide.map(step => `<li>${escapeHtml(step)}</li>`).join("")}</ol>` : "";
+      const answer = question.type === "choice"
+        ? `<div class="answer-label">Choose the best answer</div><div class="options">${question.options.map((option, index) => {
+          let resultClass = "";
+          if (state.checked && state.selected === index) resultClass = index === question.answer ? "correct" : "incorrect";
+          else if (state.checked && index === question.answer) resultClass = "correct";
+          return `<button type="button" class="option ${state.selected === index ? "selected" : ""} ${resultClass}" data-option="${index}" ${state.checked && state.lastCorrect ? "disabled" : ""}><span class="option-letter">${String.fromCharCode(65 + index)}</span><span>${option}</span></button>`;
+        }).join("")}</div>`
+        : `<div class="answer-label">Write your SQL</div><textarea id="sql-answer" spellcheck="false" aria-label="SQL answer">${escapeHtml(state.sqlText || question.starter)}</textarea><div class="sql-note">This local self-check looks for the key SQL clauses; it does not run against a database.</div>`;
+      const feedback = state.checked ? `<div id="feedback" class="feedback show ${state.lastCorrect ? "good" : "try"}">${state.lastCorrect ? escapeHtml(question.checkText || question.solution) : "Not quite yet. Revisit the key idea, adjust your answer, then check again."}</div>` : `<div id="feedback" class="feedback"></div>`;
+      $("#exercise-panel").innerHTML = `
+        <div class="question-top"><span class="question-kicker">QUESTION ${String(currentIndex + 1).padStart(2, "0")} <span aria-hidden="true">/</span> ${String(topic.questions.length).padStart(2, "0")} · ${question.type === "sql" ? "INTERACTIVE LAB" : "QUICK QUIZ"}</span><span class="difficulty ${question.difficulty.toLowerCase()}">${question.difficulty}</span></div>
+        <h3 class="question-title">${escapeHtml(question.title)}</h3>
+        <p class="question-prompt">${question.prompt}</p>
+        ${question.schema ? `<div class="schema-note"><strong>Schema</strong> &nbsp;<code>${escapeHtml(question.schema)}</code></div>` : ""}
+        <div class="tags">${question.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")}</div>
+        <div class="answer-area">${answer}</div>
+        <button type="button" class="guide-toggle" id="guide-toggle" aria-expanded="${state.guideOpen}"><span>✦ &nbsp; ${state.guideOpen ? "Hide step-by-step guide" : "Need a hint? Open the step-by-step guide"}</span><span>${state.guideOpen ? "−" : "+"}</span></button>
+        ${guide}
+        ${feedback}
+        ${state.showSolution ? `<div class="feedback show neutral"><strong>Suggested answer</strong><br><code>${escapeHtml(question.solution).replace(/\n/g, "<br>")}</code></div>` : ""}
+        <div class="action-row">
+          <div class="action-left">
+            <button type="button" id="check-answer" class="primary" ${state.checked && state.lastCorrect ? "disabled" : ""}>${state.checked && state.lastCorrect ? "✓ Completed" : question.type === "sql" ? "Check query" : "Check answer"}</button>
+            <button type="button" id="show-solution" class="text-action">${state.showSolution ? "Hide answer" : "Show answer"}</button>
+          </div>
+          <div class="action-right">
+            <button type="button" id="previous-question" class="secondary" ${currentIndex === 0 ? "disabled" : ""}>← Back</button>
+            <button type="button" id="next-question" class="secondary" ${currentIndex === topic.questions.length - 1 ? "disabled" : ""}>Next →</button>
+          </div>
+        </div>`;
+      $("#guide-toggle").addEventListener("click", () => { state.guideOpen = !state.guideOpen; renderQuestion(); });
+      $("#show-solution").addEventListener("click", () => { state.showSolution = !state.showSolution; renderQuestion(); });
+      $("#check-answer").addEventListener("click", checkAnswer);
+      $("#exercise-panel").querySelectorAll("[data-option]").forEach(button => button.addEventListener("click", () => {
+        state.selected = Number(button.dataset.option);
+        state.checked = false;
+        renderQuestion();
+      }));
+      const sqlInput = $("#sql-answer");
+      if (sqlInput) sqlInput.addEventListener("input", () => {
+        state.sqlText = sqlInput.value;
+        state.checked = false;
+        const feedback = $("#feedback");
+        if (feedback) feedback.className = "feedback";
+      });
+      $("#previous-question").addEventListener("click", () => moveQuestion(-1));
+      $("#next-question").addEventListener("click", () => moveQuestion(1));
+      renderTopicList();
+    }
+
+    function renderTopicList() {
+      const matches = matchingQuestions();
+      const current = questionById(state.questionId);
+      const visible = matches.some(question => question.id === state.questionId);
+      $("#practice-layout").hidden = !matches.length;
+      $("#empty-state").hidden = matches.length > 0;
+      if (!matches.length) return;
+      if (!visible) {
+        state.questionId = matches[0].id;
+        state.topicId = matches[0].topicId;
+        renderTopic();
+        return;
+      }
+      const topicMatches = matches.filter(question => question.topicId === state.topicId);
+      $("#exercise-list").innerHTML = `<div class="list-title">Practice · ${topicMatches.length} ${topicMatches.length === 1 ? "question" : "questions"}</div>` + topicMatches.map((question, index) => `
+        <button type="button" class="exercise-row ${question.id === state.questionId ? "active" : ""} ${state.done.has(question.id) ? "complete" : ""}" data-question="${question.id}">
+          <span class="row-check" aria-label="${state.done.has(question.id) ? "Complete" : "Not complete"}">✓</span>
+          <span class="row-text"><span class="row-name">${escapeHtml(question.title)}</span><span class="row-meta">${question.type === "sql" ? "SQL lab" : "Quick quiz"} · ${question.difficulty}</span></span>
+        </button>`).join("");
+      $("#exercise-list").querySelectorAll("[data-question]").forEach(button => button.addEventListener("click", () => selectQuestion(button.dataset.question)));
+    }
+
+    function checkAnswer() {
+      const question = questionById(state.questionId);
+      if (question.type === "choice" && state.selected === null) {
+        state.checked = true;
+        state.lastCorrect = false;
+        renderQuestion();
+        announce("Choose an option before checking your answer.");
+        return;
+      }
+      let correct = false;
+      if (question.type === "choice") correct = state.selected === question.answer;
+      else {
+        const text = ($("#sql-answer").value || "").toLowerCase().replace(/`/g, "");
+        state.sqlText = $("#sql-answer").value;
+        correct = question.patterns.every(pattern => new RegExp(pattern, "i").test(text));
+      }
+      state.checked = true;
+      state.lastCorrect = correct;
+      if (correct) {
+        state.done.add(question.id);
+        saveProgress();
+      }
+      renderQuestion();
+      renderProgress();
+    }
+
+    function selectTopic(id) {
+      state.topicId = id;
+      state.query = "";
+      state.tag = "";
+      $("#search").value = "";
+      const first = topicById(id).questions[0];
+      state.questionId = first.id;
+      resetQuestionState();
+      renderTags();
+      renderTopic();
+      renderQuestion();
+    }
+
+    function selectQuestion(id) {
+      const question = questionById(id);
+      state.topicId = question.topicId;
+      state.questionId = id;
+      resetQuestionState();
+      renderTopic();
+      renderQuestion();
+    }
+
+    function showFirstMatch() {
+      const matches = matchingQuestions();
+      renderTags();
+      if (matches.length) {
+        const question = matches[0];
+        state.questionId = question.id;
+        state.topicId = question.topicId;
+        resetQuestionState();
+        renderTopic();
+        renderQuestion();
+      } else {
+        renderTopic();
+        $("#practice-layout").hidden = true;
+        $("#empty-state").hidden = false;
+      }
+    }
+
+    function resetQuestionState() {
+      state.selected = null;
+      state.checked = false;
+      state.guideOpen = false;
+      state.showSolution = false;
+      state.sqlText = "";
+      state.lastCorrect = false;
+    }
+
+    function moveQuestion(offset) {
+      const topic = topicById(state.topicId);
+      const currentIndex = topic.questions.findIndex(question => question.id === state.questionId);
+      const next = topic.questions[currentIndex + offset];
+      if (next) selectQuestion(next.id);
+    }
+
+    $("#search").addEventListener("input", event => {
+      state.query = event.target.value.trim();
+      state.tag = "";
+      showFirstMatch();
+    });
+    $("#all-filter").addEventListener("click", () => {
+      state.query = "";
+      state.tag = "";
+      $("#search").value = "";
+      selectTopic(topics[0].id);
+    });
+    $("#reset-progress").addEventListener("click", () => {
+      if (!state.done.size || confirm("Clear all saved completion progress?")) {
+        state.done.clear();
+        saveProgress();
+        renderQuestion();
+        renderProgress();
+      }
+    });
+
+    loadProgress();
+    renderTags();
+    renderTopic();
+    renderQuestion();
+    renderProgress();
+  </script>
+</body>
+</html>
